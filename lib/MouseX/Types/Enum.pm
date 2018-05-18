@@ -131,7 +131,7 @@ Most simple declaration and usage is,
             Thu
             Fri
             Sat
-            /;
+        /;
     }
 
     Day->Sun == Day->Sun;   # 1
