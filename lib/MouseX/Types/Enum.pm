@@ -171,14 +171,7 @@ Advanced declaration and usage is,
 
     Fruits->APPLE->make_sentence('!!!');   # 'Apple is red!!!'
 
-    is_deeply(
-        Fruits->enums,
-        {
-            APPLE  => Fruits->APPLE,
-            ORANGE => Fruits->ORANGE,
-            BANANA => Fruits->BANANA
-        }
-    );
+    Fruits->enums; # { APPLE  => Fruits->APPLE, ORANGE => Fruits->ORANGE, BANANA => Fruits->BANANA }
 
 =head1 DESCRIPTION
 
