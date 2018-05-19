@@ -16,8 +16,6 @@ sub import {
     my $meta = Mouse::Meta::Class->initialize($package);
     $meta->superclasses("MouseX::Types::Enum::Base");
 
-    $meta->add_method('has' => \&{"MouseX::Types::Enum::Base::has"});
-
     my %enums;
     if (@enums > 1 && ref($enums[1]) eq 'HASH') {
         # enums(foo => { ... }, bar => { ... })
@@ -46,8 +44,6 @@ sub import {
             return $class->_instances->{$name} //= $package->new(_id => $name, %$attrs);
         });
     }
-
-    $meta->make_immutable;
 }
 
 {
@@ -132,6 +128,8 @@ Most simple declaration and usage is,
             Fri
             Sat
         /;
+
+        __PACKAGE__->meta->make_immutable;
     }
 
     Day->Sun == Day->Sun;   # 1
@@ -144,6 +142,7 @@ Advanced declaration and usage is,
     {
         package Fruits;
 
+        use Mouse;
         use MouseX::Types::Enum (
             APPLE  => { name => 'Apple', color => 'red' },
             ORANGE => { name => 'Cherry', color => 'red' },
@@ -159,6 +158,8 @@ Advanced declaration and usage is,
             $suffix ||= "";
             return sprintf("%s is %s%s", $self->name, $self->color, $suffix);
         }
+
+        __PACKAGE__->meta->make_immutable;
     }
 
     Fruits->APPLE == Fruits->APPLE;        # 1

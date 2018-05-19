@@ -17,6 +17,8 @@ subtest 'Simplest usage' => sub {
                 Fri
                 Sat
                 /;
+
+            __PACKAGE__->meta->make_immutable;
         }
 
         is(Day->Sun == Day->Sun, 1);
@@ -38,6 +40,7 @@ subtest 'Advanced usage' => sub {
         {
             package Fruits;
 
+            use Mouse;
             use MouseX::Types::Enum (
                 APPLE  => { name => 'Apple', color => 'red' },
                 ORANGE => { name => 'Cherry', color => 'red' },
@@ -53,6 +56,8 @@ subtest 'Advanced usage' => sub {
                 $suffix ||= "";
                 return sprintf("%s is %s%s", $self->name, $self->color, $suffix);
             }
+
+            __PACKAGE__->meta->make_immutable;
         }
 
         is(Fruits->APPLE == Fruits->APPLE, 1);

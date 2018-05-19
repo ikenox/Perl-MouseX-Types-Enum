@@ -3,6 +3,7 @@ package Fruits;
 use strict;
 use warnings FATAL => 'all';
 
+use Mouse;
 use MouseX::Types::Enum (
     APPLE  => { name => 'Apple', color => 'red' },
     ORANGE => { name => 'Cherry', color => 'red' },
@@ -18,5 +19,7 @@ sub make_sentence {
     $suffix ||= "";
     return sprintf("%s is %s%s", $self->name, $self->color, $suffix);
 }
+
+__PACKAGE__->meta->make_immutable;
 
 1;
