@@ -9,8 +9,6 @@ Most simple declaration and usage is,
     {
         package Day;
 
-        use strict;
-        use warnings FATAL => 'all';
         use MouseX::Types::Enum qw/
             Sun
             Mon
