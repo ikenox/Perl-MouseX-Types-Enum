@@ -4,30 +4,11 @@ MouseX::Types::Enum - Object-oriented, Java-like enum type declaration based on 
 
 # SYNOPSIS
 
-Most simple declaration and usage is,
+In the following example,
 
-    {
-        package Day;
-
-        use MouseX::Types::Enum qw/
-            Sun
-            Mon
-            Tue
-            Wed
-            Thu
-            Fri
-            Sat
-        /;
-
-        __PACKAGE__->meta->make_immutable;
-    }
-
-    Day->Sun == Day->Sun;   # 1
-    Day->Sun == Day->Mon;   # ''
-    Day->Sun->to_string;    # 'APPLE'
-    Day->enums;             # { Sun => Day->Sun, Mon => Day->Mon, ... }
-
-Advanced declaration and usage is,
+- Three enumeration constants, `APPLE`, `ORANGE`, and `BANANA` are defined.
+- Three instance variables, `name`, `color`, and `has_seed` are defined.
+- A method `make_sentence($suffix)` is defined.
 
     {
         package Fruits;
@@ -63,6 +44,29 @@ Advanced declaration and usage is,
     Fruits->APPLE->make_sentence('!!!');   # 'Apple is red!!!'
 
     Fruits->enums; # { APPLE  => Fruits->APPLE, ORANGE => Fruits->ORANGE, BANANA => Fruits->BANANA }
+
+If you have no need to define instance variables, you can declare enums more simply like following.
+
+    {
+        package Day;
+
+        use MouseX::Types::Enum qw/
+            Sun
+            Mon
+            Tue
+            Wed
+            Thu
+            Fri
+            Sat
+        /;
+
+        __PACKAGE__->meta->make_immutable;
+    }
+
+    Day->Sun == Day->Sun;   # 1
+    Day->Sun == Day->Mon;   # ''
+    Day->Sun->to_string;    # 'APPLE'
+    Day->enums;             # { Sun => Day->Sun, Mon => Day->Mon, ... }
 
 # DESCRIPTION
 
