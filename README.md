@@ -10,6 +10,8 @@ In the following example,
 - Three instance variables, `name`, `color`, and `has_seed` are defined.
 - A method `make_sentence($suffix)` is defined.
 
+code:
+
     {
         package Fruits;
 

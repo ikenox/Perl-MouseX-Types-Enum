@@ -130,6 +130,9 @@ A method C<< make_sentence($suffix) >> is defined.
 
 =back
 
+code:
+
+
     {
         package Fruits;
 
