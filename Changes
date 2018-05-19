@@ -2,6 +2,10 @@ Revision history for Perl extension MouseX-Types-Enum
 
 {{$NEXT}}
 
+1.03 2018-05-19T13:16:02Z
+
+    - update document
+
 1.02 2018-05-19T05:21:16Z
 
     - require explicitly use Mouse when use with attributes
