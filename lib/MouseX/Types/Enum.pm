@@ -194,25 +194,8 @@ If you have no need to define instance variables, you can declare enums more sim
 
 =head1 DESCRIPTION
 
-MouseX::Types::Enum provides Java-like enum type declaration.
-
-Enums declared are
-
-=over 4
-
-=item *
-
-distinguished from each other
-
-=item *
-
-able to have attributes
-
-=item *
-
-able to have methods
-
-=back
+MouseX::Types::Enum provides Java-like enum type declaration based on Mouse.
+You can declare enums which have instance variables and methods.
 
 =head1 LICENSE
 
