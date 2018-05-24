@@ -7,7 +7,7 @@ use warnings FATAL => 'all';
 use Carp;
 use Mouse::Meta::Class;
 
-our $VERSION = "1.03";
+our $VERSION = "1.04";
 
 sub import {
     my ($class, @enums) = @_;
