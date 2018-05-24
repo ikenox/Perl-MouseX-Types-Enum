@@ -139,7 +139,7 @@ code:
         use Mouse;
         use MouseX::Types::Enum (
             APPLE  => { name => 'Apple', color => 'red' },
-            ORANGE => { name => 'Cherry', color => 'red' },
+            ORANGE => { name => 'Orange', color => 'orange' },
             BANANA => { name => 'Banana', color => 'yellow', has_seed => 0 }
         );
 
@@ -188,7 +188,7 @@ If you have no need to define instance variables, you can declare enums more sim
 
     Day->Sun == Day->Sun;   # 1
     Day->Sun == Day->Mon;   # ''
-    Day->Sun->to_string;    # 'APPLE'
+    Day->Sun->to_string;    # 'Sun'
     Day->enums;             # { Sun => Day->Sun, Mon => Day->Mon, ... }
 
 
