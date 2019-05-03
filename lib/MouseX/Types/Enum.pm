@@ -5,100 +5,94 @@ use strict;
 use warnings FATAL => 'all';
 
 use Carp;
+use Class::Inspector;
+use Mouse;
 use Mouse::Meta::Class;
+use Carp qw/confess/;
 
-our $VERSION = "1.04";
+our $VERSION = "2.00";
 
 sub import {
-    my ($class, @enums) = @_;
+    my ($class) = @_;
     my $package = scalar caller;
 
     my $meta = Mouse::Meta::Class->initialize($package);
-    $meta->superclasses("MouseX::Types::Enum::Base");
 
-    my %enums;
-    if (@enums > 1 && ref($enums[1]) eq 'HASH') {
-        # enums(foo => { ... }, bar => { ... })
-        %enums = @enums;
-    }
-    else {
-        # enums('foo', 'bar')
-        %enums = map {$_ => undef} @enums;
-    }
-    while (my ($name, $attrs) = each %enums) {
-        if (exists &{"${package}::${name}"}
-            || exists &{"MouseX::Types::Enum::Base::${name}"}
-        ) {
-            croak "`${package}::${name}` is already defined or reserved as method name of MouseX::Types::Enum.";
-        }
-        if (exists $attrs->{_id}) {
-            croak "`${package}::_id` is reserved.";
-        }
+    my @functions = grep {$_ =~ /[A-Z]+[A-Z0-9_]+/} Class::Inspector->functions($class);
 
-        $package->_instances->{$name} = undef;
-        $meta->add_method($name => sub {
-            my $class = shift;
-            if (ref($class) || $class ne $package) {
-                croak "`$name` can only be called from package `$package` as static method.";
-            }
-            return $class->_instances->{$name} //= $package->new(_id => $name, %$attrs);
-        });
-    }
+    print "foooooooooooo $class @functions";
+    # my %enums;
+    # while (my ($name, $attrs) = each %enums) {
+    #     if (exists &{"${package}::${name}"}
+    #         || exists &{"MouseX::Types::Enum::Base::${name}"}
+    #     ) {
+    #         confess "`${package}::${name}` is already defined or reserved as method name of MouseX::Types::Enum.";
+    #     }
+    #     if (exists $attrs->{_id}) {
+    #         confess "`${package}::_id` is reserved.";
+    #     }
+    #
+    #     $package->_instances->{$name} = undef;
+    #     $meta->add_method($name => sub {
+    #         my $class = shift;
+    #         if (ref($class) || $class ne $package) {
+    #             confess "`$name` can only be called from package `$package` as static method.";
+    #         }
+    #         return $class->_instances->{$name} //= $package->new(_id => $name, %$attrs);
+    #     });
+    # }
 }
 
-{
-    package MouseX::Types::Enum::Base;
+has _id => (is => 'ro', isa => 'Str');
 
-    use Mouse;
-    use Carp;
-    has _id => (is => 'ro', isa => 'Str');
-
-    around BUILDARGS => sub {
-        my ($orig, $class, @args) = @_;
-        # Constructor is private
-        if (scalar caller(2) ne 'MouseX::Types::Enum') {
-            croak "Can't instantiate `$class` yourself.";
-        }
-
-        $class->$orig(@args);
-    };
-
-    use overload
-        # MouseX::Types::Enum can only be applied following operator
-        'eq' => \&_equals,
-        'ne' => \&_not_equals,
-        '==' => \&_equals,
-        '!=' => \&_not_equals,
-        '""' => \&to_string,
-    ;
-
-    my $ENUMS_MAP = {};
-    sub _instances {
-        my $class = shift;
-        return $ENUMS_MAP->{$class} //= {}
+around BUILDARGS => sub {
+    my ($orig, $class, @args) = @_;
+    # Constructor is private
+    if (scalar caller(2) ne 'MouseX::Types::Enum') {
+        confess "Can't instantiate `$class` yourself.";
     }
+    $class->$orig(@args);
+};
 
-    sub enums {
-        my ($class) = shift;
-        croak "enums_map is class method." if ref($class);
-        my $instances = $class->_instances;
-        return { map {$_ => $class->$_ } keys %$instances };
-    }
+use overload
+    # MouseX::Types::Enum can only be applied following operators
+    'eq' => \&_equals,
+    'ne' => \&_not_equals,
+    '==' => \&_equals,
+    '!=' => \&_not_equals,
+    '""' => \&to_string,
+;
 
-    sub to_string {
-        my ($self) = @_;
-        return $self->_id;
-    }
+my $GLOBAL_INSTANCE_MAP = {};
+sub _instance_map {
+    my ($class) = @_;
+    return $GLOBAL_INSTANCE_MAP->{$class}
+}
 
-    sub _equals {
-        my ($first, $second) = @_;
-        return (ref($first) eq ref($second)) && ($first->_id eq $second->_id);
-    }
+sub get {
+    my ($class, $id) = @_;
+    return $class->_instance_map->{$id} // confess "$id is not found."
+}
 
-    sub _not_equals {
-        my ($first, $second) = @_;
-        return !_equals($first, $second);
-    }
+sub all {
+    my ($class) = shift;
+    confess "enums_map is class method." if ref($class);
+    return $class->_instance_map;
+}
+
+sub to_string {
+    my ($self) = @_;
+    return sprintf("%s[id=%s]", ref($self), $self->_id);
+}
+
+sub _equals {
+    my ($first, $second) = @_;
+    return (ref($first) eq ref($second)) && ($first->_id eq $second->_id);
+}
+
+sub _not_equals {
+    my ($first, $second) = @_;
+    return !_equals($first, $second);
 }
 
 1;

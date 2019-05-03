@@ -1,9 +1,12 @@
 use strict;
 use Test::More 0.98;
 
-use_ok $_ for qw(
-    MouseX::Types::Enum
-);
+{
+    package TestEnum;
+    use parent qw/MouseX::Types::Enum/;
+}
+
+pass;
 
 done_testing;
 
