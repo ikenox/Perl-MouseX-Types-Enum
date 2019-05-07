@@ -1,58 +1,97 @@
 package MouseX::Types::Enum;
-
 use 5.008001;
-use strict;
-use warnings FATAL => 'all';
 
-use Carp;
-use Class::Inspector;
-use Mouse;
-use Mouse::Meta::Class;
-use Carp qw/confess/;
+use strict;
+use warnings;
 
 our $VERSION = "2.00";
 
-sub import {
-    my ($class) = @_;
-    my $package = scalar caller;
-
-    my $meta = Mouse::Meta::Class->initialize($package);
-
-    my @functions = grep {$_ =~ /[A-Z]+[A-Z0-9_]+/} Class::Inspector->functions($class);
-
-    print "foooooooooooo $class @functions";
-    # my %enums;
-    # while (my ($name, $attrs) = each %enums) {
-    #     if (exists &{"${package}::${name}"}
-    #         || exists &{"MouseX::Types::Enum::Base::${name}"}
-    #     ) {
-    #         confess "`${package}::${name}` is already defined or reserved as method name of MouseX::Types::Enum.";
-    #     }
-    #     if (exists $attrs->{_id}) {
-    #         confess "`${package}::_id` is reserved.";
-    #     }
-    #
-    #     $package->_instances->{$name} = undef;
-    #     $meta->add_method($name => sub {
-    #         my $class = shift;
-    #         if (ref($class) || $class ne $package) {
-    #             confess "`$name` can only be called from package `$package` as static method.";
-    #         }
-    #         return $class->_instances->{$name} //= $package->new(_id => $name, %$attrs);
-    #     });
-    # }
-}
+use Mouse;
+use Carp qw/confess/;
+use Class::Inspector;
 
 has _id => (is => 'ro', isa => 'Str');
 
 around BUILDARGS => sub {
-    my ($orig, $class, @args) = @_;
-    # Constructor is private
-    if (scalar caller(2) ne 'MouseX::Types::Enum') {
-        confess "Can't instantiate `$class` yourself.";
-    }
-    $class->$orig(@args);
+    my ($orig, $class, @params) = @_;
+
+    # This package is abstract class
+    confess __PACKAGE__ . " is abstract class." if $class eq __PACKAGE__;
+
+    # Child constructor can only be called from this package
+    confess "constructor of $class is private." unless caller(2) eq __PACKAGE__;
+
+    return $class->$orig(@params);
 };
+
+my @EXPORT_MOUSE_METHODS = qw/has with before after around/;
+
+# install Mouse methods to the child package when this package is used as parent
+if (caller eq 'parent') {
+    my $child = caller(1);
+
+    #@type Mouse::Meta::Class
+    my $meta = Mouse->init_meta(for_class => $child);
+
+    no strict 'refs';
+    no warnings 'redefine';
+    for my $method (@EXPORT_MOUSE_METHODS) {
+        $meta->add_method($method => \&{"Mouse::$method"});
+    }
+}
+
+sub _build_enum {
+    my ($child) = @_;
+    my $parent = __PACKAGE__;
+
+    # this subroutine should be called as `__PACKAGE__->build_enum`.
+    unless (caller() eq $child && !ref($child)) {
+        confess "Please call as `__PACKAGE__->_build_enum`.";
+    }
+
+    # check reserved subroutine names
+    my @child_subs = @{Class::Inspector->functions($child)};
+    my @parent_subs = @{Class::Inspector->functions($parent)};
+    my %reserved_subs = map {$_ => undef} @parent_subs;
+    my %dup_allow_subs = map {$_ => undef} (@EXPORT_MOUSE_METHODS, 'meta');
+    for my $sub_name (@child_subs) {
+        if (exists $reserved_subs{$sub_name} && !exists $dup_allow_subs{$sub_name}) {
+            confess "`$sub_name` is reserved by " . __PACKAGE__ . ".";
+        }
+    }
+
+    {
+        no strict 'refs';
+        no warnings 'redefine';
+        # Overwrite enums
+        my @enum_subs = grep {$_ =~ /^[A-Z0-9_]+$/} @child_subs;
+        for my $sub_name (@enum_subs) {
+            next if $child->_overwrite_flg->{$sub_name};
+            $child->_overwrite_flg->{$sub_name} = 1;
+
+            my $sub_glob = "${child}::${sub_name}";
+            my $param_code = *{$sub_glob}{CODE};
+
+            my ($id, %params);
+            *{"${child}\::${sub_name}"} = sub {
+                my $class = shift;
+                if ($class && $class ne $child) {
+                    confess "`$sub_glob` can only be called as static method of `$child`. Please call `${child}->${sub_name}`.";
+                }
+                ($id, %params) = $param_code->() unless defined $id;
+                return $class->_enums->{$id} //= do {
+                    confess "id is required for each enums." unless $id;
+                    $class->new(
+                        _id => $id,
+                        %params
+                    );
+                };
+            }
+        }
+    }
+
+    $child->meta->make_immutable;
+}
 
 use overload
     # MouseX::Types::Enum can only be applied following operators
@@ -60,27 +99,22 @@ use overload
     'ne' => \&_not_equals,
     '==' => \&_equals,
     '!=' => \&_not_equals,
-    '""' => \&to_string,
+    '""' => \&_to_string,
 ;
-
-my $GLOBAL_INSTANCE_MAP = {};
-sub _instance_map {
-    my ($class) = @_;
-    return $GLOBAL_INSTANCE_MAP->{$class}
-}
 
 sub get {
     my ($class, $id) = @_;
-    return $class->_instance_map->{$id} // confess "$id is not found."
+    confess "this is class method." if ref($class);
+    return $class->_enums->{$id} // confess "$id is not found."
 }
 
 sub all {
     my ($class) = shift;
-    confess "enums_map is class method." if ref($class);
-    return $class->_instance_map;
+    confess "this is class method." if ref($class);
+    return $class->_enums;
 }
 
-sub to_string {
+sub _to_string {
     my ($self) = @_;
     return sprintf("%s[id=%s]", ref($self), $self->_id);
 }
@@ -94,6 +128,24 @@ sub _not_equals {
     my ($first, $second) = @_;
     return !_equals($first, $second);
 }
+
+my %_ENUM_METAS;
+
+sub _enum_meta {
+    my ($class) = @_;
+    return $_ENUM_METAS{$class} //= {};
+}
+
+sub _enums {
+    my ($class) = @_;
+    return $class->_enum_meta->{enums} //= {};
+}
+
+sub _overwrite_flg {
+    my ($class) = @_;
+    return $class->_enum_meta->{overwrite_flg} //= {};
+}
+
 
 1;
 __END__

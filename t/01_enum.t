@@ -1,5 +1,5 @@
 use strict;
-use warnings FATAL => 'all';
+use warnings;
 use Test::More 0.98;
 use Scalar::Util qw/refaddr/;
 use Test::Exception;
@@ -12,10 +12,16 @@ BEGIN {
 
 use Fruits;
 
+{
+    package Bar;
+    use parent qw/MouseX::Types::Enum/;
+    __PACKAGE__->_build_enum;
+}
+
 subtest 'Correct enum objects are generated' => sub {
-    ok(Fruits::APPLE);
-    ok(Fruits::GRAPE);
-    ok(Fruits::BANANA);
+    ok(Fruits->APPLE);
+    ok(Fruits->GRAPE);
+    ok(Fruits->BANANA);
 
     ok(Fruits->APPLE);
     ok(Fruits->GRAPE);
@@ -116,133 +122,107 @@ subtest 'Cannot use other binary operators' => sub {
 };
 
 subtest 'Converted to string correctly' => sub {
-    is("" . Fruits->APPLE, "APPLE");
-    is(Fruits->APPLE . "", "APPLE");
-    is("" . Day->Sun, "Sun");
-    is(Day->Sun . "", "Sun");
-
-    is(Fruits->BANANA->to_string, "BANANA");
-    is(Day->Mon->to_string, "Mon");
+    is("" . Fruits->APPLE, "Fruits[id=1]");
+    is(Fruits->APPLE . "", "Fruits[id=1]");
 };
 
 subtest 'Call instance method' => sub {
     is(Fruits->APPLE->make_sentence, "Apple is red");
-    is(Fruits->GRAPE->make_sentence, "Orange is orange");
+    is(Fruits->GRAPE->make_sentence, "Grape is purple");
     is(Fruits->BANANA->make_sentence('!!!'), "Banana is yellow!!!");
 };
 
 subtest 'Correct values is set' => sub {
     is(Fruits->APPLE->name, 'Apple');
-    is(Fruits->GRAPE->name, 'Orange');
+    is(Fruits->GRAPE->name, 'Grape');
     is(Fruits->BANANA->name, 'Banana');
     is(Fruits->APPLE->color, 'red');
-    is(Fruits->GRAPE->color, 'orange');
+    is(Fruits->GRAPE->color, 'purple');
     is(Fruits->BANANA->color, 'yellow');
     is(Fruits->APPLE->has_seed, 1);
     is(Fruits->GRAPE->has_seed, 1);
     is(Fruits->BANANA->has_seed, 0);
 };
 
-subtest 'Lazy loading' => sub {
-    {
-        package Foo;
-        use MouseX::Types::Enum (
-            'A',
-            'B',
-            'C'
-        );
-    }
-
-    is((scalar grep {$_} values %{Foo->_instances}), 0);
-    is(Foo->_instances->{A}, undef);
-    Foo->A;
-    is((scalar grep {$_} values %{Foo->_instances}), 1);
-    is(Foo->_instances->{A}, Foo->A);
-
-    my $enums = Foo->enums;
-    is_deeply($enums, {
-        A => Foo->A,
-        B => Foo->B,
-        C => Foo->C,
-    });
+subtest 'Get specific enum' => sub {
+    is(Fruits->get(2), Fruits->GRAPE);
 };
 
 subtest 'Get all enums' => sub {
     is_deeply(
         Fruits->all,
         {
-            APPLE  => Fruits->APPLE,
-            GRAPE => Fruits->GRAPE,
-            BANANA => Fruits->BANANA
-        }
-    );
-    is_deeply(
-        Day->enums,
-        {
-            Sun => Day->Sun,
-            Mon => Day->Mon,
-            Tue => Day->Tue,
-            Wed => Day->Wed,
-            Thu => Day->Thu,
-            Fri => Day->Fri,
-            Sat => Day->Sat
+            1 => Fruits->APPLE,
+            2 => Fruits->GRAPE,
+            3 => Fruits->BANANA
         }
     );
 };
 
+subtest 'Lazy loading' => sub {
+    {
+        package Foo;
+        use parent qw/MouseX::Types::Enum/;
+
+        sub A {1}
+        sub B {2}
+        sub C {3}
+
+        __PACKAGE__->_build_enum;
+    }
+
+    is(Foo->_enums->{1}, undef);
+    Foo->A;
+    is(Foo->_enums->{1}, Foo->A);
+
+    my $enums = Foo->all;
+    is_deeply($enums, {
+        1 => Foo->A,
+        2 => Foo->B,
+        3 => Foo->C,
+    });
+};
+
 subtest 'Subroutine scopes' => sub {
-    subtest 'Has private constructor' => sub {
+    subtest 'Base class is abstract' => sub {
         throws_ok {
-            Fruits->new({
-                GRAPE => { name => 'Grape', color => 'Purple' }
-            })
-        } qr/Can't instantiate/;
+            MouseX::Types::Enum->new;
+        } qr/is abstract/;
     };
 
     subtest 'Each enum objects cannot call itself' => sub {
         throws_ok {
-            Fruits->APPLE->APPLE
-        } qr/`APPLE` can only be called/;
+            Fruits->APPLE->APPLE;
+        } qr/APPLE.* can only be called/;
     };
 
     subtest "Can't invoke class method from instances" => sub {
         throws_ok {
-            Fruits->APPLE->enums
+            Fruits->APPLE->all;
+        } qr/is class method/;
+        throws_ok {
+            Fruits->APPLE->get(0);
         } qr/is class method/;
     };
 };
 
 subtest 'Reserved words' => sub {
-    subtest 'Attribute name `_id` is reserved' => sub {
-        throws_ok {
-            {
-                package Hoge;
+    for my $sub (qw/_id _enums all get _to_string _equals/) {
+        subtest "Attribute name `$sub` is reserved" => sub {
+            eval <<"PERL5";
+{
+    package Hoge_$sub;
+    use parent qw/MouseX::Types::Enum/;
 
-                # Pseudo use package
-                require MouseX::Types::Enum;
-                MouseX::Types::Enum->import(
-                    Foo => { _id => 'foo' }
-                );
-            }
-        } qr/`Hoge::_id` is reserved./;
-    };
+    sub $sub {}
 
-    subtest 'Cannot declare reserved word as key' => sub {
-        for (qw/_equals _not_equals enums to_string _instances/) {
-            throws_ok {
-                {
-                    package Buzz;
-
-                    # Pseudo use package
-                    require MouseX::Types::Enum;
-                    MouseX::Types::Enum->import(
-                        $_ => {},
-                    );
-                }
-            } qr/`Buzz::$_` is already defined or reserved/, '';
-
-        }
-    };
+    __PACKAGE__->_build_enum;
+}
+PERL5
+            my $err = $@;
+            ok($err =~ /$sub.+is reserved/);
+        };
+    }
 };
 
 done_testing;

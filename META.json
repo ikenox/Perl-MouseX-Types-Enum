@@ -44,6 +44,7 @@
          "requires" : {
             "Class::Inspector" : "0",
             "Mouse" : "0",
+            "Sub::Identify" : "0",
             "perl" : "5.008001"
          }
       },
@@ -67,6 +68,9 @@
       }
    },
    "version" : "2.00",
+   "x_contributors" : [
+      "Naoto Ikeno <naoto.ikeno@dena.com>"
+   ],
    "x_serialization_backend" : "JSON::PP version 2.97001",
    "x_static_install" : 1
 }
