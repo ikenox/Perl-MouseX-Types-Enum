@@ -18,9 +18,6 @@ around BUILDARGS => sub {
     # This package is abstract class
     confess __PACKAGE__ . " is abstract class." if $class eq __PACKAGE__;
 
-    # Child constructor can only be called from this package
-    confess "constructor of $class is private." unless caller(2) eq __PACKAGE__;
-
     return $class->$orig(@params);
 };
 

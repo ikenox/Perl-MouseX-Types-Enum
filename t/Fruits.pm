@@ -5,6 +5,7 @@ use warnings;
 
 use parent qw/MouseX::Types::Enum/;
 
+
 has name => (is => 'ro', isa => 'Str');
 has color => (is => 'ro', isa => 'Str');
 has price => (is => 'ro', isa => 'Num');

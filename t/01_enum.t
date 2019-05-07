@@ -113,12 +113,12 @@ subtest 'Operator `ne` works correctly' => sub {
 };
 
 subtest 'Cannot use other binary operators' => sub {
-    throws_ok {Fruits->APPLE > Fruits->GRAPE;} qr//;
-    throws_ok {Fruits->APPLE >= Fruits->GRAPE;} qr//;
-    throws_ok {Fruits->APPLE < Fruits->GRAPE;} qr//;
-    throws_ok {Fruits->APPLE <= Fruits->GRAPE;} qr//;
-    throws_ok {Fruits->APPLE + Fruits->GRAPE;} qr//;
-    throws_ok {Fruits->APPLE + Fruits->GRAPE;} qr//;
+    throws_ok {Fruits->APPLE > Fruits->GRAPE;} qr/.+/;
+    throws_ok {Fruits->APPLE >= Fruits->GRAPE;} qr/.+/;
+    throws_ok {Fruits->APPLE < Fruits->GRAPE;} qr/.+/;
+    throws_ok {Fruits->APPLE <= Fruits->GRAPE;} qr/.+/;
+    throws_ok {Fruits->APPLE + Fruits->GRAPE;} qr/.+/;
+    throws_ok {Fruits->APPLE + Fruits->GRAPE;} qr/.+/;
 };
 
 subtest 'Converted to string correctly' => sub {
@@ -196,6 +196,12 @@ subtest 'Subroutine scopes' => sub {
         } qr/APPLE.* can only be called/;
     };
 
+    subtest 'Cannot instanciate' => sub {
+        throws_ok {
+            Fruits->new;
+        } qr/.+/;
+    };
+
     subtest "Can't invoke class method from instances" => sub {
         throws_ok {
             Fruits->APPLE->all;
@@ -223,6 +229,44 @@ PERL5
             ok($err =~ /$sub.+is reserved/);
         };
     }
+};
+
+subtest 'id duplication' => sub {
+    eval <<"PERL5";
+{
+    package DupId;
+    use parent qw/MouseX::Types::Enum/;
+
+    sub AAA {1}
+    sub BBB {1}
+
+    __PACKAGE__->_build_enum;
+}
+PERL5
+    my $err = $@;
+    ok($err =~ /.+/);
+};
+
+subtest 'enum name' => sub {
+    {
+        package Hoge;
+        use parent qw/MouseX::Types::Enum/;
+
+        sub AAA {1}
+        sub _AAA {2}
+        sub AAA_ {3}
+        sub AAA_123 {4}
+        sub aaa {5}
+        sub _aaa {6}
+
+        __PACKAGE__->_build_enum;
+    }
+    is_deeply(Hoge->all, {
+        1 => Hoge->AAA,
+        2 => Hoge->_AAA,
+        3 => Hoge->AAA_,
+        4 => Hoge->AAA_123,
+    })
 };
 
 done_testing;
