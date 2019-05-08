@@ -28,6 +28,8 @@ my %_ENUM_METAS;
 if (caller eq 'parent') {
     my $child = caller(1);
 
+    print STDERR ">>>>>>>>>>>>>>>>>>", "$child\n";
+
     #@type Mouse::Meta::Class
     my $meta = Mouse->init_meta(for_class => $child);
 
