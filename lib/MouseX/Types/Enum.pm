@@ -35,6 +35,15 @@ if (caller eq 'parent') {
     for my $method (@EXPORT_MOUSE_METHODS) {
         $meta->add_method($method => \&{"Mouse::$method"});
     }
+
+    $meta->add_around_method_modifier(BUILDARGS => sub {
+        my ($orig, $class, @params) = @_;
+        # disallow creating instance
+        if (caller(2) ne __PACKAGE__) {
+            confess sprintf("Cannot call $child->new outside of %s (called in %s)", __PACKAGE__, caller(2)."")
+        }
+        return $class->$orig(@params);
+    });
 }
 
 sub _build_enum {
@@ -50,7 +59,7 @@ sub _build_enum {
     my @child_subs = @{Class::Inspector->functions($child)};
     my @parent_subs = @{Class::Inspector->functions($parent)};
     my %reserved_subs = map {$_ => undef} @parent_subs;
-    my %dup_allow_subs = map {$_ => undef} (@EXPORT_MOUSE_METHODS, 'meta');
+    my %dup_allow_subs = map {$_ => undef} (@EXPORT_MOUSE_METHODS, 'meta', 'BUILDARGS');
     for my $sub_name (@child_subs) {
         if (exists $reserved_subs{$sub_name} && !exists $dup_allow_subs{$sub_name}) {
             confess "`$sub_name` is reserved by " . __PACKAGE__ . ".";
@@ -62,7 +71,9 @@ sub _build_enum {
         no warnings 'redefine';
         # Overwrite enums
         my @enum_subs = grep {$_ =~ /^[A-Z0-9_]+$/} @child_subs;
+        my %ignored_subs = map {$_ => undef} qw/BUILDARGS/;
         for my $sub_name (@enum_subs) {
+            next if exists $ignored_subs{$sub_name};
             next if $child->_overwrite_flg->{$sub_name};
             $child->_overwrite_flg->{$sub_name} = 1;
 
@@ -77,7 +88,7 @@ sub _build_enum {
                 }
                 ($id, %params) = $param_code->() unless defined $id;
                 return $class->_enums->{$id} //= do {
-                    confess "id is required for each enums." unless $id;
+                    confess "id is required for $child->$sub_name" unless $id;
                     $class->new(
                         _id => $id,
                         %params
