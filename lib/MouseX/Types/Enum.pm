@@ -41,14 +41,14 @@ if (caller eq 'parent') {
         my ($orig, $class, @params) = @_;
         # disallow creating instance
         if (caller(2) ne __PACKAGE__) {
-            confess sprintf("Cannot call $child->new outside of %s (called in %s)", __PACKAGE__, caller(2)."")
+            confess sprintf("Cannot call $child->new outside of %s (called in %s)", __PACKAGE__, caller(2) . "")
         }
         return $class->$orig(@params);
     });
 }
 
 sub _build_enum {
-    my ($child, %params) = @_;
+    my ($child, %build_params) = @_;
     my $parent = __PACKAGE__;
 
     # this subroutine should be called as `__PACKAGE__->build_enum`.
@@ -72,13 +72,15 @@ sub _build_enum {
         no warnings 'redefine';
         # Overwrite enums
         my @enum_subs = grep {$_ =~ /^[A-Z0-9_]+$/} @child_subs;
-        my %ignored_subs = map {$_ => undef} ('BUILDARGS', @{$params{ignore}});
+        my %ignored_subs = map {$_ => undef} ('BUILDARGS', @{$build_params{ignore}});
         for my $sub_name (@enum_subs) {
             next if exists $ignored_subs{$sub_name};
-            my ($id, %params) = $child->$sub_name;
-            confess "unique id is required for $child->$sub_name" unless $id;
+            my ($id, @args) = $child->$sub_name;
+            confess "seems to be invalid argument." if scalar(@args) % 2;
+            confess "unique id is required for $child->$sub_name ." unless $id;
+            my %args = @args;
 
-            if(exists $child->_enums->{$id}){
+            if (exists $child->_enums->{$id}) {
                 confess "id `$id` is duplicate."
             }
             $child->_enums->{$id} = undef;
@@ -90,7 +92,7 @@ sub _build_enum {
                 }
                 return $class->_enums->{$id} //= $class->new(
                     _id => $id,
-                    %params
+                    %args
                 );
             }
         }

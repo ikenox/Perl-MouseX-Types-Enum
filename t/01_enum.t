@@ -29,6 +29,9 @@ subtest 'Correct enum objects are generated' => sub {
 };
 
 subtest 'Each objects are singleton' => sub {
+    ok(refaddr(Fruits->APPLE));
+    ok(refaddr(Fruits->GRAPE));
+    ok(refaddr(Fruits->BANANA));
     ok(refaddr(Fruits->APPLE) eq refaddr(Fruits->APPLE));
     ok(refaddr(Fruits->GRAPE) eq refaddr(Fruits->GRAPE));
     ok(refaddr(Fruits->BANANA) eq refaddr(Fruits->BANANA));
@@ -245,6 +248,23 @@ subtest 'id duplication' => sub {
 PERL5
     my $err = $@;
     ok($err =~ /is duplicate/);
+};
+
+subtest 'invalid arg length' => sub {
+    eval <<"PERL5";
+{
+    package InvalidArgLenEnum;
+    use parent qw/MouseX::Types::Enum/;
+
+    sub AAA {
+        foo => 'bar',
+    }
+
+    __PACKAGE__->_build_enum;
+}
+PERL5
+    my $err = $@;
+    ok($err =~ /seems to be invalid argument/);
 };
 
 subtest 'enum name pattern' => sub {
