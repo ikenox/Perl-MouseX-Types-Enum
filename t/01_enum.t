@@ -159,7 +159,7 @@ subtest 'Get all enums' => sub {
 subtest 'Lazy loading' => sub {
     {
         package Foo;
-        use parent qw/MouseX::Types::Enum/;
+        use MouseX::Types::Enum -base;
 
         sub A {1}
         sub B {2}
@@ -217,7 +217,7 @@ subtest 'Reserved words' => sub {
             eval <<"PERL5";
 {
     package Hoge_sub_$sub;
-    use parent qw/MouseX::Types::Enum/;
+    use MouseX::Types::Enum -base;
 
     sub $sub {}
 
@@ -228,26 +228,21 @@ PERL5
             ok($err =~ /$sub.+is reserved/);
         };
 
+        subtest "Attribute name `$sub` is reserved (has)" => sub {
+            eval <<"PERL5";
+{
+    package Hoge_has_$sub;
+    use MouseX::Types::Enum -base;
+
+    has $sub => ( is => 'ro' );
+
+    __PACKAGE__->_build_enum;
+}
+PERL5
+            my $err = $@;
+            ok($err =~ /$sub.+is reserved/);
+        };
     }
-
-
-    {
-        package Hoge_has;
-        use parent qw/MouseX::Types::Enum/;
-
-        has id => (is => 'ro');
-
-        1;
-    }
-
-    subtest "Attribute name `$sub` is reserved (has)" => sub {
-        throws_ok {
-            Hoge_has->_build_enum;
-        } qr/reserved/;
-        # my $err = $@;
-        # print STDERR ">>>>>>>>>>>", $err;
-        # ok($err =~ /$sub.+is reserved/);
-    };
 
 };
 
@@ -255,7 +250,7 @@ subtest 'id duplication' => sub {
     eval <<"PERL5";
 {
     package DupIdEnum;
-    use parent qw/MouseX::Types::Enum/;
+    use MouseX::Types::Enum -base;
 
     sub AAA {1}
     sub BBB {1}
@@ -271,7 +266,7 @@ subtest 'invalid arg length' => sub {
     eval <<"PERL5";
 {
     package InvalidArgLenEnum;
-    use parent qw/MouseX::Types::Enum/;
+    use MouseX::Types::Enum -base;
 
     sub AAA {
         foo => 'bar',
@@ -287,7 +282,7 @@ PERL5
 subtest 'enum name pattern' => sub {
     {
         package Hoge;
-        use parent qw/MouseX::Types::Enum/;
+        use MouseX::Types::Enum -base;
 
         # enum
         sub AAA {1}
@@ -313,7 +308,7 @@ subtest 'enum name pattern' => sub {
 
 {
     package Fizz;
-    use parent qw/MouseX::Types::Enum/;
+    use MouseX::Types::Enum -base;
 
     has fizz => ( is => 'ro' );
 
@@ -324,7 +319,7 @@ subtest 'enum name pattern' => sub {
 
 {
     package Bar;
-    use parent qw/MouseX::Types::Enum/;
+    use MouseX::Types::Enum -base;
 
     has bar => ( is => 'ro' );
 

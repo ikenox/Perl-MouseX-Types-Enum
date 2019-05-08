@@ -24,29 +24,35 @@ around BUILDARGS => sub {
 my @EXPORT_MOUSE_METHODS = qw/has with before after around/;
 my %_ENUM_METAS;
 
-# install Mouse methods to the child package
-if (caller eq 'parent') {
-    my $child = caller(1);
+sub import {
+    my ($class, $arg1) = @_;
+    return unless $class eq __PACKAGE__;
 
-    print STDERR ">>>>>>>>>>>>>>>>>>", "$child\n";
+    if ($arg1 && $arg1 eq '-base') {
+        my $child = caller(0);
 
-    #@type Mouse::Meta::Class
-    my $meta = Mouse->init_meta(for_class => $child);
+        #@type Mouse::Meta::Class
+        my $meta = Mouse->init_meta(for_class => $child);
 
-    no strict 'refs';
-    no warnings 'redefine';
-    for my $method (@EXPORT_MOUSE_METHODS) {
-        $meta->add_method($method => \&{"Mouse::$method"});
-    }
+        # make inheritance
+        $meta->superclasses($class);
 
-    $meta->add_around_method_modifier(BUILDARGS => sub {
-        my ($orig, $class, @params) = @_;
-        # disallow creating instance
-        if (caller(2) ne __PACKAGE__) {
-            confess sprintf("Cannot call $child->new outside of %s (called in %s)", __PACKAGE__, caller(2) . "")
+        # install Mouse methods to the child package
+        no strict 'refs';
+        no warnings 'redefine';
+        for my $method (@EXPORT_MOUSE_METHODS) {
+            $meta->add_method($method => \&{"Mouse::$method"});
         }
-        return $class->$orig(@params);
-    });
+
+        $meta->add_around_method_modifier(BUILDARGS => sub {
+            my ($orig, $class, @params) = @_;
+            # disallow creating instance
+            if (caller(2) ne __PACKAGE__) {
+                confess sprintf("Cannot call $child->new outside of %s (called in %s)", __PACKAGE__, caller(2) . "")
+            }
+            return $class->$orig(@params);
+        });
+    }
 }
 
 sub _build_enum {

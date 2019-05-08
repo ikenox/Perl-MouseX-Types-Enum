@@ -3,7 +3,7 @@ package Fruits;
 use strict;
 use warnings;
 
-use parent qw/MouseX::Types::Enum/;
+use MouseX::Types::Enum -base;
 
 has name => (is => 'ro', isa => 'Str');
 has color => (is => 'ro', isa => 'Str');
