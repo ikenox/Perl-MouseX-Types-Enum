@@ -12,12 +12,6 @@ BEGIN {
 
 use Fruits;
 
-{
-    package Bar;
-    use parent qw/MouseX::Types::Enum/;
-    __PACKAGE__->_build_enum;
-}
-
 subtest 'Correct enum objects are generated' => sub {
     ok(Fruits->APPLE);
     ok(Fruits->GRAPE);
@@ -171,6 +165,8 @@ subtest 'Lazy loading' => sub {
         sub B {2}
         sub C {3}
 
+        has foo => ( is => 'ro' );
+
         __PACKAGE__->_build_enum;
     }
 
@@ -216,11 +212,11 @@ subtest 'Subroutine scopes' => sub {
 };
 
 subtest 'Reserved words' => sub {
-    for my $sub (qw/_id _enums all get _to_string _equals/) {
+    for my $sub (qw/id _enums all get _to_string _equals/) {
         subtest "Attribute name `$sub` is reserved" => sub {
             eval <<"PERL5";
 {
-    package Hoge_$sub;
+    package Hoge_sub_$sub;
     use parent qw/MouseX::Types::Enum/;
 
     sub $sub {}
@@ -231,7 +227,28 @@ PERL5
             my $err = $@;
             ok($err =~ /$sub.+is reserved/);
         };
+
     }
+
+
+    {
+        package Hoge_has;
+        use parent qw/MouseX::Types::Enum/;
+
+        has id => (is => 'ro');
+
+        1;
+    }
+
+    subtest "Attribute name `$sub` is reserved (has)" => sub {
+        throws_ok {
+            Hoge_has->_build_enum;
+        } qr/reserved/;
+        # my $err = $@;
+        # print STDERR ">>>>>>>>>>>", $err;
+        # ok($err =~ /$sub.+is reserved/);
+    };
+
 };
 
 subtest 'id duplication' => sub {
@@ -284,7 +301,7 @@ subtest 'enum name pattern' => sub {
         # ignored
         sub SOME_METHOD {}
 
-        __PACKAGE__->_build_enum(ignore => [qw/SOME_METHOD/]);
+        __PACKAGE__->_build_enum(ignore => [ qw/SOME_METHOD/ ]);
     }
     is_deeply(Hoge->all, {
         1 => Hoge->AAA,
@@ -293,5 +310,35 @@ subtest 'enum name pattern' => sub {
         4 => Hoge->AAA123_,
     })
 };
+
+{
+    package Fizz;
+    use parent qw/MouseX::Types::Enum/;
+
+    has fizz => ( is => 'ro' );
+
+    sub FIZZ1 {1, fizz => 'fizz'}
+
+    __PACKAGE__->_build_enum;
+}
+
+{
+    package Bar;
+    use parent qw/MouseX::Types::Enum/;
+
+    has bar => ( is => 'ro' );
+
+    sub BAR1 {1, bar => 'bar'}
+
+    __PACKAGE__->_build_enum;
+}
+
+subtest 'multiple use parent' => sub {
+    ok(Fizz->FIZZ1);
+    ok(Fizz->FIZZ1->fizz);
+    ok(Bar->BAR1);
+    ok(Bar->BAR1->bar);
+};
+
 
 done_testing;

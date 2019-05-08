@@ -10,7 +10,7 @@ use Mouse;
 use Carp qw/confess/;
 use Class::Inspector;
 
-has _id => (is => 'ro', isa => 'Str');
+has id => (is => 'ro', isa => 'Str');
 
 around BUILDARGS => sub {
     my ($orig, $class, @params) = @_;
@@ -91,7 +91,7 @@ sub _build_enum {
                     confess "`${child}::$sub_name` can only be called as static method of `$child`. Please call `${child}->${sub_name}`.";
                 }
                 return $class->_enums->{$id} //= $class->new(
-                    _id => $id,
+                    id => $id,
                     %args
                 );
             }
@@ -124,12 +124,12 @@ sub all {
 
 sub _to_string {
     my ($self) = @_;
-    return sprintf("%s[id=%s]", ref($self), $self->_id);
+    return sprintf("%s[id=%s]", ref($self), $self->id);
 }
 
 sub _equals {
     my ($first, $second) = @_;
-    return (ref($first) eq ref($second)) && ($first->_id eq $second->_id);
+    return (ref($first) eq ref($second)) && ($first->id eq $second->id);
 }
 
 sub _not_equals {
