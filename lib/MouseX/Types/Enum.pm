@@ -22,8 +22,9 @@ around BUILDARGS => sub {
 };
 
 my @EXPORT_MOUSE_METHODS = qw/has with before after around/;
+my %_ENUM_METAS;
 
-# install Mouse methods to the child package when this package is used as parent
+# install Mouse methods to the child package
 if (caller eq 'parent') {
     my $child = caller(1);
 
@@ -47,7 +48,7 @@ if (caller eq 'parent') {
 }
 
 sub _build_enum {
-    my ($child) = @_;
+    my ($child, %params) = @_;
     my $parent = __PACKAGE__;
 
     # this subroutine should be called as `__PACKAGE__->build_enum`.
@@ -71,29 +72,26 @@ sub _build_enum {
         no warnings 'redefine';
         # Overwrite enums
         my @enum_subs = grep {$_ =~ /^[A-Z0-9_]+$/} @child_subs;
-        my %ignored_subs = map {$_ => undef} qw/BUILDARGS/;
+        my %ignored_subs = map {$_ => undef} ('BUILDARGS', @{$params{ignore}});
         for my $sub_name (@enum_subs) {
             next if exists $ignored_subs{$sub_name};
-            next if $child->_overwrite_flg->{$sub_name};
-            $child->_overwrite_flg->{$sub_name} = 1;
+            my ($id, %params) = $child->$sub_name;
+            confess "unique id is required for $child->$sub_name" unless $id;
 
-            my $sub_glob = "${child}::${sub_name}";
-            my $param_code = *{$sub_glob}{CODE};
+            if(exists $child->_enums->{$id}){
+                confess "id `$id` is duplicate."
+            }
+            $child->_enums->{$id} = undef;
 
-            my ($id, %params);
             *{"${child}\::${sub_name}"} = sub {
                 my $class = shift;
                 if ($class && $class ne $child) {
-                    confess "`$sub_glob` can only be called as static method of `$child`. Please call `${child}->${sub_name}`.";
+                    confess "`${child}::$sub_name` can only be called as static method of `$child`. Please call `${child}->${sub_name}`.";
                 }
-                ($id, %params) = $param_code->() unless defined $id;
-                return $class->_enums->{$id} //= do {
-                    confess "id is required for $child->$sub_name" unless $id;
-                    $class->new(
-                        _id => $id,
-                        %params
-                    );
-                };
+                return $class->_enums->{$id} //= $class->new(
+                    _id => $id,
+                    %params
+                );
             }
         }
     }
@@ -136,8 +134,6 @@ sub _not_equals {
     my ($first, $second) = @_;
     return !_equals($first, $second);
 }
-
-my %_ENUM_METAS;
 
 sub _enum_meta {
     my ($class) = @_;

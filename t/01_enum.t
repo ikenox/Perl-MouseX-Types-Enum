@@ -199,7 +199,7 @@ subtest 'Subroutine scopes' => sub {
     subtest 'Cannot instanciate' => sub {
         throws_ok {
             Fruits->new;
-        } qr/.+/;
+        } qr/Cannot call.+outside of/;
     };
 
     subtest "Can't invoke class method from instances" => sub {
@@ -234,7 +234,7 @@ PERL5
 subtest 'id duplication' => sub {
     eval <<"PERL5";
 {
-    package DupId;
+    package DupIdEnum;
     use parent qw/MouseX::Types::Enum/;
 
     sub AAA {1}
@@ -244,28 +244,33 @@ subtest 'id duplication' => sub {
 }
 PERL5
     my $err = $@;
-    ok($err =~ /.+/);
+    ok($err =~ /is duplicate/);
 };
 
-subtest 'enum name' => sub {
+subtest 'enum name pattern' => sub {
     {
         package Hoge;
         use parent qw/MouseX::Types::Enum/;
 
+        # enum
         sub AAA {1}
         sub _AAA {2}
         sub AAA_ {3}
-        sub AAA_123 {4}
+        sub AAA123_ {4}
+
+        # not enum
         sub aaa {5}
         sub _aaa {6}
+        # ignored
+        sub SOME_METHOD {}
 
-        __PACKAGE__->_build_enum;
+        __PACKAGE__->_build_enum(ignore => [qw/SOME_METHOD/]);
     }
     is_deeply(Hoge->all, {
         1 => Hoge->AAA,
         2 => Hoge->_AAA,
         3 => Hoge->AAA_,
-        4 => Hoge->AAA_123,
+        4 => Hoge->AAA123_,
     })
 };
 
