@@ -6,8 +6,8 @@ MouseX::Types::Enum - Object-oriented, Java-like enum type declaration based on 
 
 In the following example,
 
-- Three enumeration constants, `APPLE`, `ORANGE`, and `BANANA` are defined.
-- Three instance variables, `name`, `color`, and `has_seed` are defined.
+- Three enumeration constants, `APPLE`, `GRAPE`, and `BANANA` are defined.
+- Three instance variables, `name`, `color`, `price` and `has_seed` are defined.
 - A method `make_sentence($suffix)` is defined.
 
 code:

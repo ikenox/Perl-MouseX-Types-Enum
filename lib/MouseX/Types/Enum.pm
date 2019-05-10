@@ -4,7 +4,7 @@ use 5.008001;
 use strict;
 use warnings;
 
-our $VERSION = "2.00";
+our $VERSION = "2.01";
 
 use Mouse;
 use Carp qw/confess/;
@@ -165,11 +165,11 @@ In the following example,
 
 =item *
 
-Three enumeration constants, C<< APPLE >>, C<< ORANGE >>, and C<< BANANA >> are defined.
+Three enumeration constants, C<< APPLE >>, C<< GRAPE >>, and C<< BANANA >> are defined.
 
 =item *
 
-Three instance variables, C<< name >>, C<< color >>, and C<< has_seed >> are defined.
+Three instance variables, C<< name >>, C<< color >>, C<< price >> and C<< has_seed >> are defined.
 
 =item *
 
