@@ -4,7 +4,7 @@ use 5.008001;
 use strict;
 use warnings;
 
-our $VERSION = "2.01";
+our $VERSION = "2.02";
 
 use Mouse;
 use Carp qw/confess/;
