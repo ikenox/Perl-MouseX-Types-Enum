@@ -78,17 +78,18 @@ sub _build_enum {
             if (exists $child->_enums->{$id}) {
                 confess "id `$id` is duplicate."
             }
-            $child->_enums->{$id} = undef;
+            my $instance = $child->new(
+                id => $id,
+                %args
+            );
+            $child->_enums->{$id} = $instance;
 
             *{"${child}\::${sub_name}"} = sub {
                 my $class = shift;
                 if ($class && $class ne $child) {
                     confess "`${child}::$sub_name` can only be called as static method of `$child`. Please call `${child}->${sub_name}`.";
                 }
-                return $class->_enums->{$id} //= $class->new(
-                    id => $id,
-                    %args
-                );
+                return $instance;
             }
         }
     }
